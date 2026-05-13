@@ -1,137 +1,131 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 export default function LoginPage() {
+  const router = useRouter();
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [message, setMessage] = useState("");
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!email || !password) {
-      alert("Please fill in all fields");
-      return;
-    }
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
 
-    // Sample login validation
-    if (
-      email === "admin@gmail.com" &&
-      password === "123456"
-    ) {
-      alert("Login Successful");
-    } else {
-      alert("Invalid email or password");
+      const data = await response.json();
+
+      if (response.ok) {
+
+        // Save user to localStorage
+        localStorage.setItem(
+          "user",
+          JSON.stringify(data.user)
+        );
+
+        // Redirect to dashboard
+        router.push("/dashboard");
+
+      } else {
+        setMessage(data.error);
+      }
+
+    } catch (error) {
+      setMessage("Something went wrong");
     }
   };
 
   return (
-    <main
-      style={{
-        height: "100vh",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        background:
-          "linear-gradient(to right, #141e30, #243b55)",
-      }}
-    >
-      <form
-        onSubmit={handleSubmit}
-        style={{
-          backgroundColor: "white",
-          padding: "40px",
-          borderRadius: "15px",
-          width: "350px",
-          boxShadow: "0 10px 25px rgba(0,0,0,0.2)",
-        }}
-      >
-        <h1
-          style={{
-            textAlign: "center",
-            marginBottom: "25px",
-            color: "#111",
-          }}
-        >
-          Login
+    <div className="min-h-screen flex items-center justify-center bg-orange-50 px-4">
+
+      <div className="bg-white shadow-xl rounded-3xl p-8 w-full max-w-md">
+
+        <h1 className="text-4xl font-bold text-center text-orange-600 mb-2">
+          CASA AIREZA
         </h1>
 
-        <input
-          type="email"
-          placeholder="Enter Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          style={{
-            width: "100%",
-            padding: "12px",
-            marginBottom: "15px",
-            borderRadius: "8px",
-            border: "1px solid #ccc",
-            color: "#111",
-          }}
-        />
+        <p className="text-center text-gray-500 mb-8">
+          Login to your account
+        </p>
 
-        <input
-          type="password"
-          placeholder="Enter Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          style={{
-            width: "100%",
-            padding: "12px",
-            marginBottom: "20px",
-            borderRadius: "8px",
-            border: "1px solid #ccc",
-            color: "#111",
-          }}
-        />
+        <form onSubmit={handleSubmit} className="space-y-5">
 
-        <button
-          type="submit"
-          style={{
-            width: "100%",
-            padding: "12px",
-            border: "none",
-            borderRadius: "8px",
-            backgroundColor: "#4f46e5",
-            color: "white",
-            fontSize: "16px",
-            cursor: "pointer",
-          }}
-        >
-          Login
-        </button>
+          <div>
+            <label className="block mb-2 font-medium text-gray-700">
+              Email
+            </label>
 
-        <p
-          style={{
-            marginTop: "15px",
-            textAlign: "center",
-            color: "#111",
-          }}
-        >
-          No account?{" "}
-          <Link href="/signup">
-            Signup
+            <input
+              type="email"
+              name="email"
+              placeholder="Enter your email"
+              onChange={handleChange}
+              required
+              className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
+            />
+          </div>
+
+          <div>
+            <label className="block mb-2 font-medium text-gray-700">
+              Password
+            </label>
+
+            <input
+              type="password"
+              name="password"
+              placeholder="Enter your password"
+              onChange={handleChange}
+              required
+              className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="w-full bg-orange-600 hover:bg-orange-700 text-white py-3 rounded-xl font-semibold transition"
+          >
+            Login
+          </button>
+
+        </form>
+
+        {message && (
+          <p className="text-center mt-4 text-red-500">
+            {message}
+          </p>
+        )}
+
+        <p className="text-center mt-6 text-gray-600">
+          Don’t have an account?{" "}
+          <Link
+            href="/signup"
+            className="text-orange-600 font-semibold"
+          >
+            Sign Up
           </Link>
         </p>
 
-        <p
-          style={{
-            marginTop: "20px",
-            textAlign: "center",
-            fontSize: "14px",
-            color: "gray",
-          }}
-        >
-          Demo Account:
-          <br />
-          admin@gmail.com
-          <br />
-          123456
-        </p>
-      </form>
-    </main>
+      </div>
+    </div>
   );
 }

@@ -1,131 +1,107 @@
+// app/signup/page.tsx
 "use client";
 
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { motion } from "framer-motion";
+
+// Zod schema for form validation
+const signupSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+type SignupFormValues = z.infer<typeof signupSchema>;
 
 export default function SignupPage() {
+  const router = useRouter();
+  const [error, setError] = useState("");
+  
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<SignupFormValues>({
+    resolver: zodResolver(signupSchema),
+  });
 
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const onSubmit = async (data: SignupFormValues) => {
+    setError("");
+    try {
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!name || !email || !password) {
-      alert("All fields are required");
-      return;
+      if (res.ok) {
+        router.push("/login"); // Redirect to login on success
+      } else {
+        const errData = await res.json();
+        setError(errData.error || "Something went wrong");
+      }
+    } catch (err) {
+      setError("Failed to connect to the server.");
     }
-
-    if (password.length < 6) {
-      alert("Password must be at least 6 characters");
-      return;
-    }
-
-    alert("Signup Successful");
   };
 
   return (
-    <main
-      style={{
-        height: "100vh",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        background:
-          "linear-gradient(to right, #141e30, #243b55)",
-      }}
-    >
-      <form
-        onSubmit={handleSubmit}
-        style={{
-          backgroundColor: "white",
-          padding: "40px",
-          borderRadius: "15px",
-          width: "350px",
-          boxShadow: "0 10px 25px rgba(0,0,0,0.2)",
-        }}
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md"
       >
-        <h1
-          style={{
-            textAlign: "center",
-            marginBottom: "25px",
-            color: "#111",
-          }}
-        >
-          Signup
-        </h1>
+        <h2 className="text-3xl font-bold text-center text-gray-900 mb-8">Create an Account</h2>
+        
+        {error && <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm">{error}</div>}
 
-        <input
-          type="text"
-          placeholder="Enter Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          style={{
-            width: "100%",
-            padding: "12px",
-            marginBottom: "15px",
-            borderRadius: "8px",
-            border: "1px solid #ccc",
-          }}
-        />
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+            <input 
+              {...register("name")} 
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              placeholder="John Doe"
+            />
+            {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
+          </div>
 
-        <input
-          type="email"
-          placeholder="Enter Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          style={{
-            width: "100%",
-            padding: "12px",
-            marginBottom: "15px",
-            borderRadius: "8px",
-            border: "1px solid #ccc",
-          }}
-        />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <input 
+              {...register("email")} 
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              placeholder="john@example.com"
+            />
+            {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
+          </div>
 
-        <input
-          type="password"
-          placeholder="Enter Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          style={{
-            width: "100%",
-            padding: "12px",
-            marginBottom: "20px",
-            borderRadius: "8px",
-            border: "1px solid #ccc",
-          }}
-        />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            <input 
+              type="password"
+              {...register("password")} 
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              placeholder="••••••••"
+            />
+            {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>}
+          </div>
 
-        <button
-          type="submit"
-          style={{
-            width: "100%",
-            padding: "12px",
-            border: "none",
-            borderRadius: "8px",
-            backgroundColor: "#06b6d4",
-            color: "white",
-            fontSize: "16px",
-            cursor: "pointer",
-          }}
-        >
-          Signup
-        </button>
+          <button 
+            type="submit" 
+            disabled={isSubmitting}
+            className="w-full py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50"
+          >
+            {isSubmitting ? "Creating..." : "Sign Up"}
+          </button>
+        </form>
 
-        <p
-          style={{
-            marginTop: "15px",
-            textAlign: "center",
-          }}
-        >
-          Already have an account?{" "}
-          <Link href="/login">
-            Login
-          </Link>
+        <p className="mt-6 text-center text-sm text-gray-600">
+          Already have an account? <Link href="/login" className="text-blue-600 font-semibold hover:underline">Log in</Link>
         </p>
-      </form>
-    </main>
+      </motion.div>
+    </div>
   );
 }
